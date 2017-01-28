@@ -55,6 +55,9 @@ func main() {
 	}
 	http.HandleFunc("/favicon.ico", handlerFavicon)
 	http.HandleFunc("/", handlerBase)
-	fmt.Printf("Now listening on port %d.", c.Port)
-	http.ListenAndServe(fmt.Sprintf(":%d", c.Port), nil)
+	fmt.Println("Now listening on port", c.Port)
+	err = http.ListenAndServe(fmt.Sprintf(":%d", c.Port), nil)
+	if err != nil {
+		fmt.Println("Port is in use! Shutting down.")
+	}
 }

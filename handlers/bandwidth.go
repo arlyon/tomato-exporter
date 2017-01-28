@@ -8,6 +8,20 @@ import (
 	"regexp"
 )
 
+type Source struct {
+	Download string `json:"rx"`
+	Upload string `json:"tx"`
+}
+
+type Interfaces struct {
+	Eth0 Source `json:"eth0"`
+	Eth1 Source `json:"eth1"`
+	Eth2 Source `json:"eth2"`
+	Vlan1 Source `json:"vlan1"`
+	Vlan2 Source `json:"vlan2"`
+	Br0 Source `json:"br0"`
+}
+
 func Bandwidth(w http.ResponseWriter, r *http.Request) {
 
 	// ------------ //
@@ -29,16 +43,6 @@ func Bandwidth(w http.ResponseWriter, r *http.Request) {
 	defer resp.Body.Close()
 	responsebody, _ := ioutil.ReadAll(resp.Body)
 
-	// ---------------------------------- //
-	// format the bad json into good json //
-	// ---------------------------------- //
-
-	// create the quotinator3000 //
-	quotinator3000, _ := regexp.Compile("(0x[\\da-f]+)|(rx)|(tx)")
-
-	// use the quotinator3000
-	responsebody = quotinator3000.ReplaceAllFunc(responsebody, quoteme) // add quotes
-
 	// fix excess formatting (additional space and 's)
 	for i := 11; i < len(responsebody)-2; i++ {
 		if responsebody[i] == 39 { // if it's an '
@@ -50,10 +54,22 @@ func Bandwidth(w http.ResponseWriter, r *http.Request) {
 	// slice to get rid of the \n\nnetdata= and };;
 	responsebody = responsebody[9:len(responsebody)-3]
 
-	// ------------------ //
-	// unmarshal the json //
-	// ------------------ //
+	// ---------------------------------- //
+	// format the bad json into good json //
+	// ---------------------------------- //
 
-	fmt.Fprint(w, string(responsebody))
+	// create and use the quotinator3000 //
+	quotinator3000, _ := regexp.Compile("(0x[\\da-f]+)|(rx)|(tx)")
+	responsestring := quotinator3000.ReplaceAllStringFunc(string(responsebody), quoteme) // add quotes
+
+	// create and use the dehexinator2000 //
+	dehexinator, _ := regexp.Compile("(0x[\\da-f]+)")
+	responsestring = dehexinator.ReplaceAllStringFunc(responsestring, dehex) // add quotes
+
+	// ------------- //
+	// send it away! //
+	// ------------- //
+
+	fmt.Fprint(w, responsestring)
 
 }
