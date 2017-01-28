@@ -5,22 +5,16 @@ import (
 	"net/http"
 	"strings"
 	"io/ioutil"
-	"regexp"
+	"encoding/json"
+	"os"
+	"reflect"
+	"unsafe"
+
+	"./config"
+	"./handlers"
 )
 
-type Source struct {
-	Download string `json:"rx"`
-	Upload string `json:"tx"`
-}
-
-type Bandwidth struct {
-	Eth0 Source `json:"eth0"`
-	Eth1 Source `json:"eth1"`
-	Eth2 Source `json:"eth2"`
-	Vlan1 Source `json:"vlan1"`
-	Vlan2 Source `json:"vlan2"`
-	Br0 Source `json:"br0"`
-}
+var c = config.Config{}
 
 func quoteme(b []byte) []byte {
 	s := []byte("\"")
@@ -29,60 +23,45 @@ func quoteme(b []byte) []byte {
 	return b
 }
 
-func handlerMain(w http.ResponseWriter, r *http.Request) {
+func handlerFavicon(w http.ResponseWriter, r *http.Request) {}
 
-	// ------------ //
-	// get the data //
-	// ------------ //
+func handlerBase(w http.ResponseWriter, r *http.Request) {
+	attributes := int(unsafe.Sizeof(c.Modules))
 
-	// create the request //
-	body := strings.NewReader(`exec=netdev&_http_id=TIDa6f69305333e3371`)
-	req, err := http.NewRequest("POST", "http://192.168.10.1/update.cgi", body)
-	// set the headers //
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("Authorization", "Basic YWRtaW46YWRtaW4=")
+	v := "<h1>Tomato Exporter</h1>\n"
 
-	// do the request //
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		fmt.Println("error", err)
-	}
-	defer resp.Body.Close()
-	responsebody, _ := ioutil.ReadAll(resp.Body)
-
-	// ---------------------------------- //
-	// format the bad json into good json //
-	// ---------------------------------- //
-
-	// create the quotinator3000 //
-	quotinator3000, _ := regexp.Compile("(0x[\\da-f]+)|(rx)|(tx)")
-
-	// use the quotinator3000
-	responsebody = quotinator3000.ReplaceAllFunc(responsebody, quoteme) // add quotes
-
-	// fix excess formatting (additional space and 's)
-	for i := 11; i < len(responsebody)-2; i++ {
-		if responsebody[i] == 39 { // if it's an '
-			responsebody[i] = 34 // make it a "
+	for i:=0;i<attributes;i++ {
+		name := reflect.ValueOf(c.Modules).Type().Field(i).Name
+		if reflect.ValueOf(c.Modules).Field(0).Bool() == true {
+			v += fmt.Sprintf("<ul><a href=\"/%s\">%s</a></ul>",strings.ToLower(name),name)
 		}
-		responsebody[i-1] = responsebody[i] // move everything from 11 onwards to remove the space
 	}
 
-	// slice to get rid of the \n\nnetdata= and };;
-	responsebody = responsebody[9:len(responsebody)-3]
-
-	// ------------------ //
-	// unmarshal the json //
-	// ------------------ //
-
-	fmt.Fprint(w, string(responsebody))
-
+	fmt.Fprint(w, v)
 }
 
-func handlerTrash(w http.ResponseWriter, r *http.Request) {}
-
 func main() {
-	http.HandleFunc("/bandwidth", handlerMain)
-	http.HandleFunc("/", handlerTrash)
-	http.ListenAndServe(":8080", nil)
+
+	// open the config file //
+	configFile, err := ioutil.ReadFile("./config.json")
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	// parse the config file //
+	err = json.Unmarshal(configFile, &c)
+	if err != nil {
+		fmt.Println("Bad formatting in config: ", err)
+		os.Exit(2)
+	}
+
+	// start the web server //
+	if c.Modules.Bandwidth == true {
+		http.HandleFunc("/bandwidth", handlers.Bandwidth)
+	}
+	http.HandleFunc("/favicon.ico", handlerFavicon)
+	http.HandleFunc("/", handlerBase)
+	fmt.Printf("Now listening on port %d.", c.Port)
+	http.ListenAndServe(fmt.Sprintf(":%d", c.Port), nil)
 }
