@@ -59,7 +59,7 @@ func Bandwidth(w http.ResponseWriter, r *http.Request) {
 	// ---------------------------------- //
 
 	// create and use the quotinator3000 //
-	quotinator3000, _ := regexp.Compile("(0x[\\da-f]+)|(rx)|(tx)")
+	quotinator3000, _ := regexp.Compile("(rx)|(tx)")
 	responsestring := quotinator3000.ReplaceAllStringFunc(string(responsebody), quoteme) // add quotes
 
 	// create and use the dehexinator2000 //
