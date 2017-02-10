@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"./config"
 	"./handlers"
-	"./github.com/fatih/structs"
+	"./src/github.com/fatih/structs"
 	"strings"
 )
 
