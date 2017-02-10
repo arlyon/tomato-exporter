@@ -6,34 +6,25 @@ import (
 	"fmt"
 	"io/ioutil"
 	"regexp"
+	"../config"
+	"encoding/json"
+	"encoding/base64"
 )
 
-type Source struct {
-	Download string `json:"rx"`
-	Upload string `json:"tx"`
-}
-
-type Interfaces struct {
-	Eth0 Source `json:"eth0"`
-	Eth1 Source `json:"eth1"`
-	Eth2 Source `json:"eth2"`
-	Vlan1 Source `json:"vlan1"`
-	Vlan2 Source `json:"vlan2"`
-	Br0 Source `json:"br0"`
-}
-
 func Bandwidth(w http.ResponseWriter, r *http.Request) {
+
+	conf := config.GetConfig()
 
 	// ------------ //
 	// get the data //
 	// ------------ //
 
 	// create the request //
-	body := strings.NewReader(`exec=netdev&_http_id=TIDa6f69305333e3371`)
-	req, err := http.NewRequest("POST", "http://192.168.10.1/update.cgi", body)
-	// set the headers //
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("Authorization", "Basic YWRtaW46YWRtaW4=")
+	body := strings.NewReader(`exec=netdev&_http_id=`+conf.HttpId)
+	req, err := http.NewRequest("POST", "http://"+conf.Ip+"/update.cgi", body)
+	// authenticate by converting the username and password to base 64 //
+	auth := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s",conf.Username,conf.Password)))
+	req.Header.Set("Authorization", "Basic "+auth)
 
 	// do the request //
 	resp, err := http.DefaultClient.Do(req)
@@ -65,6 +56,21 @@ func Bandwidth(w http.ResponseWriter, r *http.Request) {
 	// create and use the dehexinator2000 //
 	dehexinator, _ := regexp.Compile("(0x[\\da-f]+)")
 	responsestring = dehexinator.ReplaceAllStringFunc(responsestring, dehex) // add quotes
+
+	if conf.ModBandwidth.Interfaces[0] != "all" {
+		var data map[string]interface{}
+		response := make(map[string]interface{})
+		err = json.Unmarshal([]byte(responsestring), &data)
+		for _,value := range conf.ModBandwidth.Interfaces {
+			for key,data := range data {
+				if value == key {
+					response[value] = data
+				}
+			}
+		}
+		responsebody, _ = json.Marshal(response)
+		responsestring = string(responsebody)
+	}
 
 	// ------------- //
 	// send it away! //

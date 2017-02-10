@@ -3,30 +3,26 @@ package main
 import (
 	"fmt"
 	"net/http"
-	"strings"
-	"io/ioutil"
-	"encoding/json"
-	"os"
-	"reflect"
-	"unsafe"
-
 	"./config"
 	"./handlers"
+	"./github.com/fatih/structs"
+	"strings"
 )
 
-var c = config.Config{}
+var conf = config.Config{}
 
 func handlerFavicon(w http.ResponseWriter, r *http.Request) {}
 
 func handlerBase(w http.ResponseWriter, r *http.Request) {
-	attributes := int(unsafe.Sizeof(c.Modules))
+	confmap := structs.Map(conf)
 
 	v := "<h1>Tomato Exporter</h1>\n"
+	enabled_modules := confmap["EnabledModules"].(map[string]interface{})
 
-	for i:=0;i<attributes;i++ {
-		name := reflect.ValueOf(c.Modules).Type().Field(i).Name
-		if reflect.ValueOf(c.Modules).Field(0).Bool() == true {
-			v += fmt.Sprintf("<ul><a href=\"/%s\">%s</a></ul>",strings.ToLower(name),name)
+	for key, value := range enabled_modules {
+		if value == true {
+			name := confmap[key].(map[string]interface{})["Slug"]
+			v += fmt.Sprintf("<ul><a href=\"/%s\">%s</a></ul>",strings.ToLower(fmt.Sprint(name)),name)
 		}
 	}
 
@@ -35,28 +31,16 @@ func handlerBase(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 
-	// open the config file //
-	configFile, err := ioutil.ReadFile("/etc/tomato-exporter.conf")
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-
-	// parse the config file //
-	err = json.Unmarshal(configFile, &c)
-	if err != nil {
-		fmt.Println("Bad formatting in config: ", err)
-		os.Exit(2)
-	}
+	conf = config.SetConfig()
 
 	// start the web server //
-	if c.Modules.Bandwidth == true {
-		http.HandleFunc("/bandwidth", handlers.Bandwidth)
+	if conf.EnabledModules.ModBandwidth == true {
+		http.HandleFunc("/"+conf.ModBandwidth.Slug, handlers.Bandwidth)
 	}
 	http.HandleFunc("/favicon.ico", handlerFavicon)
 	http.HandleFunc("/", handlerBase)
-	fmt.Println("Now listening on port", c.Port)
-	err = http.ListenAndServe(fmt.Sprintf(":%d", c.Port), nil)
+	fmt.Println("Now listening on port", conf.Port)
+	err := http.ListenAndServe(fmt.Sprintf(":%d", conf.Port), nil)
 	if err != nil {
 		fmt.Println("Port is in use! Shutting down.")
 	}
