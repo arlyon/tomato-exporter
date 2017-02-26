@@ -1,0 +1,2 @@
+[submodule "src/src/github.com/fatih/structs"]
+	url = https://github.com/fatih/structs.git

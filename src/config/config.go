@@ -33,19 +33,22 @@ func GetConfig() Config {
 
 type Config struct {
 	Port int       			`json:"hosting_port"`
-	HttpId string       		`json:"http_id"`
-	Username string       		`json:"router_username"`
-	Password string       		`json:"router_password"`
-	Ip string 			`json:"router_ip"`
 	EnabledModules Modules 		`json:"enabled_modules"`
 	ModBandwidth ModuleSettings    	`json:"mod_bandwidth"`
+	ModSystemd ModuleSettings    	`json:"mod_systemd"`
 }
 
 type Modules struct {
-	ModBandwidth bool      	`json:"mod_bandwidth"`
+	ModBandwidth bool      		`json:"mod_bandwidth"`
+	ModSystemd bool      		`json:"mod_systemd"`
 }
 
 type ModuleSettings struct {
 	Interfaces []string 		`json:"interfaces"`
 	Slug string 			`json:"slug"`
+	HttpId string       		`json:"http_id"`
+	Username string       		`json:"router_username"`
+	Password string       		`json:"router_password"`
+	Ip string 			`json:"router_ip"`
+	Services []string		`json:"services"`
 }

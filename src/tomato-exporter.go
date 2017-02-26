@@ -37,6 +37,9 @@ func main() {
 	if conf.EnabledModules.ModBandwidth == true {
 		http.HandleFunc("/"+conf.ModBandwidth.Slug, handlers.Bandwidth)
 	}
+	if conf.EnabledModules.ModSystemd == true {
+		http.HandleFunc("/"+conf.ModSystemd.Slug, handlers.Systemd)
+	}
 	http.HandleFunc("/favicon.ico", handlerFavicon)
 	http.HandleFunc("/", handlerBase)
 	fmt.Println("Now listening on port", conf.Port)

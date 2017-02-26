@@ -20,10 +20,10 @@ func Bandwidth(w http.ResponseWriter, r *http.Request) {
 	// ------------ //
 
 	// create the request //
-	body := strings.NewReader(`exec=netdev&_http_id=`+conf.HttpId)
-	req, err := http.NewRequest("POST", "http://"+conf.Ip+"/update.cgi", body)
+	body := strings.NewReader(`exec=netdev&_http_id=`+conf.ModBandwidth.HttpId)
+	req, err := http.NewRequest("POST", "http://"+conf.ModBandwidth.Ip+"/update.cgi", body)
 	// authenticate by converting the username and password to base 64 //
-	auth := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s",conf.Username,conf.Password)))
+	auth := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s",conf.ModBandwidth.Username,conf.ModBandwidth.Password)))
 	req.Header.Set("Authorization", "Basic "+auth)
 
 	// do the request //
