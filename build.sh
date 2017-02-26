@@ -7,7 +7,6 @@ PREV=`git describe --abbrev=0 $VERSION^`
 FOLDER="tomato-exporter_$VERSION"
 mv tomato-exporter_$PREV $FOLDER
 cd src
-go get github.com/tools/godep
 GOOS=linux GOARCH=amd64 go build tomato-exporter.go
 cd ..
 cp src/tomato-exporter.conf $FOLDER/etc/

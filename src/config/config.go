@@ -11,7 +11,7 @@ var config = Config{}
 
 func SetConfig() Config {
 	// open the config file //
-	configFile, err := ioutil.ReadFile("tomato-exporter.conf")
+	configFile, err := ioutil.ReadFile("/etc/tomato-exporter.conf")
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
