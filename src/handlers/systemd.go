@@ -6,7 +6,7 @@ import (
 	"os/exec"
 	"fmt"
 	"strings"
-	"src/github.com/fatih/structs"
+	"github.com/fatih/structs"
 	"encoding/json"
 )
 
@@ -26,7 +26,7 @@ func Systemd(w http.ResponseWriter, r *http.Request) {
 
 	response := make(map[string]interface{})
 
-	for _,element := range strings.Split(string(systemd[1:len(systemd)]), "\n") {
+	for _,element := range strings.Split(string(systemd[1:len(systemd)-1]), "\n") {
 		args := strings.Fields(element)
 
 		isloaded := false
