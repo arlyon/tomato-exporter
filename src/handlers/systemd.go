@@ -13,7 +13,7 @@ func Systemd(w http.ResponseWriter, r *http.Request) {
 
 	for _,value := range conf.ModSystemd.Services {
 		fmt.Println(value)
-		output, err := exec.Command("sudo systemctl status "+value).Output()
+		output, err := exec.Command("/bin/sh", "-c", "sudo systemctl status "+value).Output()
 		if err != nil {
 			fmt.Println(err)
 		}
