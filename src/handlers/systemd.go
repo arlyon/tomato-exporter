@@ -11,8 +11,8 @@ import (
 )
 
 type Status struct {
-	Loaded bool
-	Active bool
+	Loaded int
+	Active int
 	Substate string
 }
 
@@ -29,14 +29,14 @@ func Systemd(w http.ResponseWriter, r *http.Request) {
 	for _,element := range strings.Split(string(systemd[1:len(systemd)-1]), "\n") {
 		args := strings.Fields(element)
 
-		isloaded := false
+		isloaded := 0
 		if args[1] == "loaded" {
-			isloaded = true
+			isloaded = 1
 		}
 
-		isactive := false
+		isactive := 0
 		if args[2] == "active" {
-			isactive = true
+			isactive = 1
 		}
 
 		service := structs.Map(Status{isloaded, isactive, args[3]})
