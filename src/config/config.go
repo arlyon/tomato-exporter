@@ -33,6 +33,7 @@ func GetConfig() Config {
 
 type Config struct {
 	Port int       			`json:"hosting_port"`
+	Ip string       		`json:"binding_ip"`
 	EnabledModules Modules 		`json:"enabled_modules"`
 	ModBandwidth ModuleSettings    	`json:"mod_bandwidth"`
 	ModSystemd ModuleSettings    	`json:"mod_systemd"`

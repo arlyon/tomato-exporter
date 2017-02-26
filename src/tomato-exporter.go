@@ -45,6 +45,6 @@ func main() {
 	fmt.Println("Now listening on port", conf.Port)
 	err := http.ListenAndServe(fmt.Sprintf(":%d", conf.Port), nil)
 	if err != nil {
-		fmt.Println("Port is in use! Shutting down.")
+		fmt.Println("Could not bind to port! Shutting down.")
 	}
 }
