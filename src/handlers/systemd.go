@@ -17,6 +17,6 @@ func Systemd(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			fmt.Println(err)
 		}
-		fmt.Fprint(w, output)
+		fmt.Fprint(w, string(output)+"\n")
 	}
 }
