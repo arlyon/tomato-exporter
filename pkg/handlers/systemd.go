@@ -7,7 +7,7 @@ import (
 	"os/exec"
 	"strings"
 
-	c "../config"
+	c "github.com/arlyon/tomato_exporter/configs"
 	"github.com/fatih/structs"
 )
 
