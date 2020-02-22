@@ -1,32 +1,36 @@
 package handlers
 
 import (
-	"net/http"
-	"../config"
-	"os/exec"
-	"fmt"
-	"strings"
-	"github.com/fatih/structs"
 	"encoding/json"
+	"fmt"
+	"net/http"
+	"os/exec"
+	"strings"
+
+	c "../config"
+	"github.com/fatih/structs"
 )
 
+// Status shows the status of a service.
 type Status struct {
-	Loaded int
-	Active int
+	Loaded   int
+	Active   int
 	Substate string
 }
 
+// Systemd is a handler designed to pump systemd stats for prometheus
 func Systemd(w http.ResponseWriter, r *http.Request) {
-	conf := config.GetConfig()
-
-	systemd, err := exec.Command("/bin/sh", "-c", "sudo systemctl list-units | grep '"+strings.Join(conf.ModSystemd.Services, "\\|")+"'").Output()
+	systemd, err := exec.Command("/bin/sh", "-c", "sudo systemctl list-units | grep '"+strings.Join(c.Conf.ModSystemd.Services, "\\|")+"'").Output()
 	if err != nil {
-		fmt.Println(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	} else if len(systemd) == 0 {
+		fmt.Fprintf(w, "{}")
+		return
 	}
 
 	response := make(map[string]interface{})
-
-	for _,element := range strings.Split(string(systemd[1:len(systemd)-1]), "\n") {
+	for _, element := range strings.Split(string(systemd[1:len(systemd)-1]), "\n") {
 		args := strings.Fields(element)
 
 		isloaded := 0

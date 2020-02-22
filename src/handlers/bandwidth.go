@@ -1,38 +1,44 @@
 package handlers
 
 import (
-	"strings"
-	"net/http"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"regexp"
-	"../config"
-	"encoding/json"
-	"encoding/base64"
+	"strings"
+
+	c "../config"
 )
 
+// Bandwidth is a handler to publish bandwidth metrics in prometheus format
 func Bandwidth(w http.ResponseWriter, r *http.Request) {
-
-	conf := config.GetConfig()
-
-	// ------------ //
-	// get the data //
-	// ------------ //
-
 	// create the request //
-	body := strings.NewReader(`exec=netdev&_http_id=`+conf.ModBandwidth.HttpId)
-	req, err := http.NewRequest("POST", "http://"+conf.ModBandwidth.Ip+"/update.cgi", body)
+	body := strings.NewReader(`exec=netdev&_http_id=` + c.Conf.ModBandwidth.HTTPID)
+	req, err := http.NewRequest("POST", "http://"+c.Conf.ModBandwidth.IP+"/update.cgi", body)
+	if err != nil {
+		http.Error(w, "error creating request: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	// authenticate by converting the username and password to base 64 //
-	auth := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s",conf.ModBandwidth.Username,conf.ModBandwidth.Password)))
+	auth := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", c.Conf.ModBandwidth.Username, c.Conf.ModBandwidth.Password)))
 	req.Header.Set("Authorization", "Basic "+auth)
 
 	// do the request //
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		fmt.Println("error", err)
+		http.Error(w, "error sending request: "+err.Error(), http.StatusInternalServerError)
+		return
 	}
+
 	defer resp.Body.Close()
-	responsebody, _ := ioutil.ReadAll(resp.Body)
+	responsebody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		http.Error(w, "error reading request: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	// fix excess formatting (additional space and 's)
 	for i := 11; i < len(responsebody)-2; i++ {
@@ -43,7 +49,7 @@ func Bandwidth(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// slice to get rid of the \n\nnetdata= and };;
-	responsebody = responsebody[9:len(responsebody)-3]
+	responsebody = responsebody[9 : len(responsebody)-3]
 
 	// ---------------------------------- //
 	// format the bad json into good json //
@@ -51,18 +57,18 @@ func Bandwidth(w http.ResponseWriter, r *http.Request) {
 
 	// create and use the quotinator3000 //
 	quotinator3000, _ := regexp.Compile("(rx)|(tx)")
-	responsestring := quotinator3000.ReplaceAllStringFunc(string(responsebody), quoteme) // add quotes
+	responsestring := quotinator3000.ReplaceAllStringFunc(string(responsebody), quoteme)
 
 	// create and use the dehexinator2000 //
 	dehexinator, _ := regexp.Compile("(0x[\\da-f]+)")
-	responsestring = dehexinator.ReplaceAllStringFunc(responsestring, dehex) // add quotes
+	responsestring = dehexinator.ReplaceAllStringFunc(responsestring, dehex)
 
-	if conf.ModBandwidth.Interfaces[0] != "all" {
+	if len(c.Conf.ModBandwidth.Interfaces) != 0 {
 		var data map[string]interface{}
 		response := make(map[string]interface{})
 		err = json.Unmarshal([]byte(responsestring), &data)
-		for _,value := range conf.ModBandwidth.Interfaces {
-			for key,data := range data {
+		for _, value := range c.Conf.ModBandwidth.Interfaces {
+			for key, data := range data {
 				if value == key {
 					response[value] = data
 				}
@@ -72,10 +78,5 @@ func Bandwidth(w http.ResponseWriter, r *http.Request) {
 		responsestring = string(responsebody)
 	}
 
-	// ------------- //
-	// send it away! //
-	// ------------- //
-
 	fmt.Fprint(w, responsestring)
-
 }

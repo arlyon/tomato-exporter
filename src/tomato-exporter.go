@@ -2,48 +2,60 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
-	"./config"
-	"./handlers"
-	"./src/github.com/fatih/structs"
+	"os"
 	"strings"
-)
 
-var conf = config.Config{}
+	"./handlers"
+
+	c "./config"
+)
 
 func handlerFavicon(w http.ResponseWriter, r *http.Request) {}
 
 func handlerBase(w http.ResponseWriter, r *http.Request) {
-	confmap := structs.Map(conf)
-
 	v := "<h1>Tomato Exporter</h1>\n"
-	enabled_modules := confmap["EnabledModules"].(map[string]interface{})
 
-	for key, value := range enabled_modules {
-		if value == true {
-			name := confmap[key].(map[string]interface{})["Slug"]
-			v += fmt.Sprintf("<ul><a href=\"/%s\">%s</a></ul>",strings.ToLower(fmt.Sprint(name)),name)
-		}
+	if c.Conf.ModBandwidth != nil {
+		name := c.Conf.ModBandwidth.Slug
+		v += fmt.Sprintf("<ul><a href=\"/%s\">%s</a></ul>", strings.ToLower(fmt.Sprint(name)), name)
+	}
+
+	if c.Conf.ModSystemd != nil {
+		name := c.Conf.ModSystemd.Slug
+		v += fmt.Sprintf("<ul><a href=\"/%s\">%s</a></ul>", strings.ToLower(fmt.Sprint(name)), name)
 	}
 
 	fmt.Fprint(w, v)
 }
 
 func main() {
+	if len(os.Args) != 2 {
+		println("usage: " + os.Args[0] + " ./path-to-config.conf")
+		os.Exit(1)
+	}
 
-	conf = config.SetConfig()
+	c.LoadConfig(os.Args[1])
+
+	if c.Conf.ModBandwidth != nil {
+		if c.Conf.ModBandwidth.Slug == "" {
+			log.Fatal("Cannot bind mod_bandwidth to route /")
+		}
+		http.HandleFunc("/"+c.Conf.ModBandwidth.Slug, handlers.Bandwidth)
+	}
+	if c.Conf.ModSystemd != nil {
+		if c.Conf.ModSystemd.Slug == "" {
+			log.Fatal("Cannot bind mod_systemd to route /")
+		}
+		http.HandleFunc("/"+c.Conf.ModSystemd.Slug, handlers.Systemd)
+	}
 
 	// start the web server //
-	if conf.EnabledModules.ModBandwidth == true {
-		http.HandleFunc("/"+conf.ModBandwidth.Slug, handlers.Bandwidth)
-	}
-	if conf.EnabledModules.ModSystemd == true {
-		http.HandleFunc("/"+conf.ModSystemd.Slug, handlers.Systemd)
-	}
 	http.HandleFunc("/favicon.ico", handlerFavicon)
 	http.HandleFunc("/", handlerBase)
-	fmt.Println("Now listening on port", conf.Port)
-	err := http.ListenAndServe(fmt.Sprintf(":%d", conf.Port), nil)
+	fmt.Println(fmt.Sprintf("Now listening on http://%s:%d", c.Conf.IP, c.Conf.Port))
+	err := http.ListenAndServe(fmt.Sprintf(":%d", c.Conf.Port), nil)
 	if err != nil {
 		fmt.Println("Could not bind to port! Shutting down.")
 	}
