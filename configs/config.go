@@ -1,10 +1,11 @@
 package config
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
+
+	"gopkg.in/yaml.v2"
 )
 
 // Conf contains the configs for this app
@@ -17,7 +18,7 @@ func LoadConfig(path string) Config {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	err = json.Unmarshal(configFile, &Conf)
+	err = yaml.Unmarshal(configFile, &Conf)
 	if err != nil {
 		fmt.Println("Bad formatting in config: ", err)
 		os.Exit(2)
@@ -27,27 +28,26 @@ func LoadConfig(path string) Config {
 
 // Config describes the options available to the program
 type Config struct {
-	Port         int           `json:"hosting_port"`
-	IP           string        `json:"binding_ip"`
-	ModBandwidth *modBandwidth `json:"mod_bandwidth"`
-	ModSystemd   *modSystemD   `json:"mod_systemd"`
+	Port    int     `yaml:"port"`
+	IP      string  `yaml:"ip"`
+	Modules modules `yaml:"modules"`
 }
 
 type modules struct {
-	ModBandwidth bool `json:"mod_bandwidth"`
-	ModSystemd   bool `json:"mod_systemd"`
+	ModBandwidth *modBandwidth `yaml:"mod_bandwidth"`
+	ModSystemd   *modSystemD   `yaml:"mod_systemd"`
 }
 
 type modSystemD struct {
-	Slug     string   `json:"slug"`
-	Services []string `json:"services"`
+	Slug     string   `yaml:"slug"`
+	Services []string `yaml:"services"`
 }
 
 type modBandwidth struct {
-	Slug       string   `json:"slug"`
-	Interfaces []string `json:"interfaces"`
-	HTTPID     string   `json:"http_id"`
-	Username   string   `json:"router_username"`
-	Password   string   `json:"router_password"`
-	IP         string   `json:"router_ip"`
+	Slug       string   `yaml:"slug"`
+	Interfaces []string `yaml:"interfaces"`
+	HTTPID     string   `yaml:"http_id"`
+	Username   string   `yaml:"admin_username"`
+	Password   string   `yaml:"admin_password"`
+	IP         string   `yaml:"router_ip"`
 }

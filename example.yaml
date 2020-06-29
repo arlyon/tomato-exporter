@@ -1,0 +1,22 @@
+ip: "0.0.0.0" # the interface to host the service on
+port: 8080 # the port to host the service on
+
+# this next section defined the list of modules.
+# to disable a module, simply remove its config.
+modules:
+  # mod_bandwidth gets network data from tomato router
+  # for a list of given interfaces
+  mod_bandwidth:
+    slug: bandwidth # accessible {host}:{port}/bandwidth
+    router_ip: "192.168.1.1"
+    admin_username: lyonrj
+    admin_password: wbtc0rar
+    interfaces: ["eth0", "eth1", "eth2", "vlan1", "vlan2", "br0"]
+    # the http_id. see here to learn how to get it: 
+    # https://www.home-assistant.io/integrations/tomato/
+    http_id: TIDbcb78c94e58d2df2
+
+  # mod_systemd gets data from the systemd of the server
+  # that is running the scraper (not the router!)
+  mod_systemd:
+    slug: systemd # accessible {host}:{port}/systemd

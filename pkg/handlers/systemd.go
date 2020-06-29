@@ -20,7 +20,9 @@ type Status struct {
 
 // Systemd is a handler designed to pump systemd stats for prometheus
 func Systemd(w http.ResponseWriter, r *http.Request) {
-	systemd, err := exec.Command("/bin/sh", "-c", "sudo systemctl list-units | grep '"+strings.Join(c.Conf.ModSystemd.Services, "\\|")+"'").Output()
+	module := c.Conf.Modules.ModSystemd
+
+	systemd, err := exec.Command("/bin/sh", "-c", "sudo systemctl list-units | grep '"+strings.Join(module.Services, "\\|")+"'").Output()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

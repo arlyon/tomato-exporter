@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"regexp"
+	"strconv"
 	"strings"
 
 	c "github.com/arlyon/tomato_exporter/configs"
@@ -14,16 +15,19 @@ import (
 
 // Bandwidth is a handler to publish bandwidth metrics in prometheus format
 func Bandwidth(w http.ResponseWriter, r *http.Request) {
+
+	module := c.Conf.Modules.ModBandwidth
+
 	// create the request //
-	body := strings.NewReader(`exec=netdev&_http_id=` + c.Conf.ModBandwidth.HTTPID)
-	req, err := http.NewRequest("POST", "http://"+c.Conf.ModBandwidth.IP+"/update.cgi", body)
+	body := strings.NewReader(`exec=netdev&_http_id=` + module.HTTPID)
+	req, err := http.NewRequest("POST", "http://"+module.IP+"/update.cgi", body)
 	if err != nil {
 		http.Error(w, "error creating request: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	// authenticate by converting the username and password to base 64 //
-	auth := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", c.Conf.ModBandwidth.Username, c.Conf.ModBandwidth.Password)))
+	auth := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", module.Username, module.Password)))
 	req.Header.Set("Authorization", "Basic "+auth)
 
 	// do the request //
@@ -37,6 +41,11 @@ func Bandwidth(w http.ResponseWriter, r *http.Request) {
 	responsebody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		http.Error(w, "error reading request: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if resp.StatusCode != 200 {
+		http.Error(w, "bad status code: "+strconv.Itoa(resp.StatusCode)+". here's what the server said:\n\n"+string(responsebody), resp.StatusCode)
 		return
 	}
 
@@ -63,11 +72,11 @@ func Bandwidth(w http.ResponseWriter, r *http.Request) {
 	dehexinator, _ := regexp.Compile("(0x[\\da-f]+)")
 	responsestring = dehexinator.ReplaceAllStringFunc(responsestring, dehex)
 
-	if len(c.Conf.ModBandwidth.Interfaces) != 0 {
+	if len(module.Interfaces) != 0 {
 		var data map[string]interface{}
 		response := make(map[string]interface{})
 		err = json.Unmarshal([]byte(responsestring), &data)
-		for _, value := range c.Conf.ModBandwidth.Interfaces {
+		for _, value := range module.Interfaces {
 			for key, data := range data {
 				if value == key {
 					response[value] = data
